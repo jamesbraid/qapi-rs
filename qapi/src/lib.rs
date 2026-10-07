@@ -225,7 +225,7 @@ mod qmp_impl {
 
     impl<S: BufRead> Qmp<S> {
         pub fn read_capabilities(&mut self) -> io::Result<QMP> {
-            match self.inner.decode_line()? {
+            match self.inner.decode_line::<QapiCapabilities>()? {
                 None => Err(io::Error::new(
                     io::ErrorKind::UnexpectedEof,
                     "expected capabilities response",
@@ -341,5 +341,16 @@ mod qga_impl {
                 Err(e) => Err(e.into()),
             }
         }
+    }
+}
+
+#[cfg(all(test, feature = "qmp"))]
+mod tests {
+    use std::io;
+
+    #[test]
+    fn greeting_eof_is_an_error() {
+        let mut qmp = crate::Qmp::new(crate::Stream::new(io::Cursor::new(Vec::new()), io::sink()));
+        assert_eq!(qmp.read_capabilities().unwrap_err().kind(), io::ErrorKind::UnexpectedEof);
     }
 }
